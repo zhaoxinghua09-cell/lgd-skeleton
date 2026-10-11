@@ -1,0 +1,44 @@
+{
+  "schema": "https://schema.cloudflare.com/agent-skills/discovery/v0.2.0",
+  "name": "lgd-skeleton",
+  "description": "LGD 母骨架可选模块清单（Agent 无关、fail-closed 门禁，覆盖 OWASP Agentic Top 10 2026 build-time）。加载前须校验 digest。",
+  "generated": "2026-10-11",
+  "skills": [
+    {
+      "name": "clone-site",
+      "type": "skill-md",
+      "url": "modules/clone-site/SKILL.md",
+      "digest": "01d92105224d08828dfce14119354998fb5ffe77988b291c41f4bf6ac65a4508"
+    },
+    {
+      "name": "github",
+      "type": "skill-md",
+      "url": "modules/github/SKILL.md",
+      "digest": "6ba4871c6d38f93393b7dd52ea4a7ef12014631b263936d7c6c184c15e353246"
+    },
+    {
+      "name": "pdf",
+      "type": "skill-md",
+      "url": "modules/pdf/SKILL.md",
+      "digest": "948da1d752c4ede054d3f5e0dd119046753d457cb9641e5ae55cf7c4a1e433f5"
+    },
+    {
+      "name": "reverse",
+      "type": "skill-md",
+      "url": "modules/reverse/SKILL.md",
+      "digest": "0009f369383d7f6c79136b37268b5c3e82c149cdf98369337b3c83bdb11eab12"
+    },
+    {
+      "name": "mcp",
+      "type": "skill-md",
+      "url": "modules/mcp/SKILL.md",
+      "digest": "ba92c1aac88049d781ecf6c17274a33b1c999bf6a335ea42ce934cec761eceed"
+    },
+    {
+      "name": "a2a",
+      "type": "skill-md",
+      "url": "modules/a2a/SKILL.md",
+      "digest": "754032a5ab90ba4c3e7161ca8266afaeb59d349aed710bf67600c5b363ca32b5"
+    }
+  ]
+}

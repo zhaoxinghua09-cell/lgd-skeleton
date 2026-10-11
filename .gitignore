@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.eggs/
+build/
+dist/
+
+# Node
+node_modules/
+
+# Env / secrets
+.env
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Red-team sandbox (local, temporary)
+_lgd_skeleton_rt_bench/
+
+# Logs
+*.log

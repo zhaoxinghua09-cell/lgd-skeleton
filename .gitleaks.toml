@@ -1,0 +1,13 @@
+[extend]
+use-default = true
+
+[allowlist]
+# Negative-control fixtures in tests intentionally contain fake secret-like strings.
+# Also allow the gitignored local red-team sandbox so ad-hoc local gitleaks runs stay green.
+paths = [
+  ".*_test\\.py",
+  ".*test.*\\.ts",
+  "scaffold_test\\.py",
+  "gates/gates\\.test\\.ts",
+  ".*_lgd_skeleton_rt_bench.*",
+]

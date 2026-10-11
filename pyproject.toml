@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lgd-skeleton"
+version = "1.0.0"
+description = "Agent-agnostic, zero-dependency, fail-closed governance scaffold for Agent Skills (OWASP Agentic Top 10 2026 build-time)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "赵兴华 / Steven Zhao" }]
+keywords = ["agent-skills", "ai-governance", "owasp", "fail-closed", "ai-safety"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+# The skeleton keeps its flat file-layout (gates/gates.py, scaffold.py run directly).
+# No modules are installed; this file exists for PyPI metadata + `pip install -e .`.

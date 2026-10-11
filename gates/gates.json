@@ -1,0 +1,13 @@
+{
+  "schema": "lgd.ai-collab/gates@1",
+  "semantics": "fail-closed",
+  "description": "LGD 母骨架技能/工具层门禁契约。移植自 .ai-collab G1–G16 企业级门禁，保留 fail-closed 语义。",
+  "gates": [
+    {"id": "G1-metadata", "name": "元数据门禁", "rule": "SKILL.md 必须含 name+description，description 含'何时使用'信号且>=20字符", "on_fail": "FAILED"},
+    {"id": "G3-secret-scan", "name": "秘密扫描", "rule": "scripts/ 下禁止硬编码 api_key/secret/token/jwt/service_role", "on_fail": "FAILED"},
+    {"id": "G4-injection-scan", "name": "注入扫描", "rule": "禁止 eval/exec/os.system/shell=True/HTML 注入", "on_fail": "FAILED"},
+    {"id": "G16-ethics", "name": "伦理门禁", "rule": "技能声明/代码不得含认证绕过/数据窃取/钓鱼/未授权访问等明确危险意图", "on_fail": "FAILED"},
+    {"id": "G15-path-safety", "name": "路径安全", "rule": "禁止 ../ 穿越、禁止覆写受保护前缀(gates/.well-known/scaffold.py/AGENTS.md/llms.txt)", "on_fail": "FAILED"},
+    {"id": "G12-digest", "name": "完整性校验", "rule": "SKILL.md 的 SHA-256 须与发布 index.json 中的 digest 一致", "on_fail": "FAILED"}
+  ]
+}
