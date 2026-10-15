@@ -107,7 +107,7 @@ def verify(skill_dir):
     """运行门禁并打印结果。"""
     sys.path.insert(0, str(ROOT / "gates"))
     import gates as G
-    passed, report = G.run_gates(Path(skill_dir))
+    passed, report = G.run_gates(Path(skill_dir), discovery_mode="local")
     print(json.dumps(report, ensure_ascii=False, indent=2))
     print("\nRESULT:", "PASSED" if passed else "FAILED")
     return 0 if passed else 1
@@ -155,7 +155,7 @@ def main():
     # 生成后立即跑门禁（fail-closed）
     sys.path.insert(0, str(ROOT / "gates"))
     import gates as G
-    passed, report = G.run_gates(skill_dir, digest)
+    passed, report = G.run_gates(skill_dir, digest, discovery_mode="local")
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if passed:
         print(f"\nRESULT: PASSED ✅  模块 {skill_dir.name} 可登记入 index.json")

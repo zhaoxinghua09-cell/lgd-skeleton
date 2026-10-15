@@ -13,7 +13,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { createHash } from 'crypto';
-import { pathToFileURL } from 'url';
+import { pathToFileURL, fileURLToPath } from 'url';
 
 const PROTECTED_PREFIXES: string[] = ['gates/', '.well-known/', 'scaffold.ts', 'scaffold.py', 'AGENTS.md', 'llms.txt'];
 
@@ -84,7 +84,7 @@ const KILLSWITCH_DECL = /(kill[\s-]?switch|终止条件|terminat|停止条件|ex
 const CODE_EXT = ['.py', '.sh', '.js', '.ts', '.md'];
 const TEXT_EXT = ['.py', '.sh', '.js', '.ts', '.md', '.json', '.txt', '.yaml', '.yml'];
 
-type GateResult = { gate: string; status: string; detail: string };
+type GateResult = { gate: string; status: string; detail: string; warnings?: string[] };
 
 function failClosed(label: string, exc: unknown): GateResult {
   return { gate: label, status: 'FAILED', detail: `fail-closed: ${(exc as Error).constructor.name}: ${String(exc)}` };
@@ -231,13 +231,132 @@ function gatePathSafety(skillDir: string): GateResult {
   return { gate: 'G15-path-safety', status: 'PASSED', detail: '无路径穿越/受保护区覆写' };
 }
 
+function stripDigestPrefix(s?: string): string {
+  const v = (s ?? '').trim();
+  return v.toLowerCase().startsWith('sha256:') ? v.slice('sha256:'.length).toLowerCase() : v.toLowerCase();
+}
+
 function gateDigest(skillDir: string, expected?: string): GateResult {
   const skillMd = path.join(skillDir, 'SKILL.md');
   if (!fs.existsSync(skillMd)) return { gate: 'G12-digest', status: 'FAILED', detail: 'SKILL.md 缺失' };
   const digest = createHash('sha256').update(fs.readFileSync(skillMd)).digest('hex');
-  if (expected !== undefined && expected !== digest)
+  const exp = expected !== undefined ? stripDigestPrefix(expected) : undefined;
+  if (exp !== undefined && exp !== digest)
     return { gate: 'G12-digest', status: 'FAILED', detail: `digest 不匹配 (got ${digest.slice(0, 12)}…)` };
-  return { gate: 'G12-digest', status: 'PASSED', detail: `sha256=${digest.slice(0, 16)}…` };
+  return { gate: 'G12-digest', status: 'PASSED', detail: `sha256:${digest.slice(0, 16)}…` };
+}
+
+// ---------------------------------------------------------------------------
+// G17 发现层一致性（Agent Skills Discovery RFC v0.2.0）· 两模式
+//   local      ：读本地 index.json，逐条对 url 指向的本地文件实算 SHA-256 并与 digest 比对
+//   structural ：仅校形状（顶层键 / entry 键集 / 字段类型·长度·字符集 / $schema 取值），
+//                不解析 url、不碰文件系统、不触网 —— 用于校验远端索引样本（如外部正向对照）
+// fail-closed：文件缺失 / JSON 解析失败 / 模式未指定或非法 => FAILED（绝不静默放行）
+// 注：archive 型条目的额外要求（digest 校验后拒 `..`/绝对路径/逃逸 symlink·hardlink/解压炸弹）
+//     仅 **applicable only to type=archive**；本仓 index.json 当前无 archive 条目，未触发。
+//     客户端 SHALL NOT 默认执行 scripts/（规范约束，非本 build-time 门禁可测项）。
+// ---------------------------------------------------------------------------
+const DISCOVERY_INDEX_REL = '.well-known/agent-skills/index.json';
+const KNOWN_SCHEMA_URIS: string[] = ['https://schemas.agentskills.io/discovery/0.2.0/schema.json'];
+const DISCOVERY_TOP_KEYS = ['$schema', 'skills'];
+const DISCOVERY_ENTRY_KEYS = ['name', 'type', 'description', 'url', 'digest'];
+const DISCOVERY_TYPES = ['skill-md', 'archive'];
+const DISCOVERY_MODES = ['local', 'structural'];
+const SKILL_NAME_RE = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+const DIGEST_RE = /^sha256:[0-9a-f]{64}$/;
+const ENC_TRAVERSAL_RE = /%2e%2e|%2f|%5c/i;
+const ABS_FS_RE = /^[A-Za-z]:[\\/]/;
+const URI_SCHEME_RE = /^[a-z][a-z0-9+.-]*:\/\//i;
+
+function resolveRepoRoot(skillDir: string, repoRoot?: string): string {
+  if (repoRoot) return path.resolve(repoRoot);
+  let cur = path.resolve(skillDir);
+  for (;;) {
+    if (fs.existsSync(path.join(cur, DISCOVERY_INDEX_REL))) return cur;
+    const parent = path.dirname(cur);
+    if (parent === cur) break;
+    cur = parent;
+  }
+  // 回退：gates/gates.ts 的父目录即仓库根
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+}
+
+function resolveDiscoveryUrl(repoRoot: string, url: unknown): { target?: string; why?: string } {
+  if (typeof url !== 'string' || !url.trim()) return { why: 'url 为空或非字符串' };
+  const u = url.trim();
+  if (u.startsWith('\\') || u.startsWith('//')) return { why: 'UNC/网络路径' };
+  if (ABS_FS_RE.test(u)) return { why: '绝对文件系统路径' };
+  if (URI_SCHEME_RE.test(u)) return { why: '外部绝对 URL（无法在仓库内校验）' };
+  if (ENC_TRAVERSAL_RE.test(u)) return { why: '百分号编码路径穿越' };
+  const norm = u.replace(/\\/g, '/');
+  const segs = norm.split('/').filter(s => s !== '' && s !== '.');
+  if (segs.some(s => s === '..')) return { why: "路径穿越 '..'" };
+  const rel = segs.join('/');
+  if (!rel) return { why: 'url 无有效路径段' };
+  const base = path.resolve(repoRoot);
+  const target = path.resolve(base, rel);
+  const relCheck = path.relative(base, target);
+  if (relCheck.startsWith('..') || path.isAbsolute(relCheck)) return { why: '解析后逃逸出仓库' };
+  return { target };
+}
+
+export function gateDiscoveryConformance(skillDir: string, repoRoot?: string, mode?: string, indexPath?: string): GateResult {
+  const warnings: string[] = [];
+  const result = (status: string, detail: string): GateResult => {
+    const r: GateResult = { gate: 'G17-discovery-conformance', status, detail };
+    if (warnings.length) r.warnings = [...warnings];
+    return r;
+  };
+  if (!DISCOVERY_MODES.includes(mode as string)) return result('FAILED', `模式未指定或非法（须 ${DISCOVERY_MODES.join(' 或 ')}），fail-closed 拒绝放行`);
+  const root = resolveRepoRoot(skillDir, repoRoot);
+  const idx = indexPath ? path.resolve(indexPath) : path.join(root, DISCOVERY_INDEX_REL);
+  if (!fs.existsSync(idx) || !fs.statSync(idx).isFile()) return result('FAILED', `缺失发现层索引 ${idx}`);
+  let data: unknown;
+  try { data = JSON.parse(fs.readFileSync(idx, 'utf8')); }
+  catch (e) { return result('FAILED', `index.json 非法 JSON: ${String(e)}`); }
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return result('FAILED', 'index.json 顶层不是对象');
+  const obj = data as Record<string, unknown>;
+  const extras = Object.keys(obj).filter(k => !DISCOVERY_TOP_KEYS.includes(k));
+  if (extras.length) warnings.push('未识别顶层键（RFC：客户端 MUST 忽略）: ' + extras.join(', '));
+  if (!('$schema' in obj)) {
+    warnings.push('缺 $schema：RFC 规定按 v0.1.0 处理；本骨架发布 v0.2.0 索引，故判不合规');
+    return result('FAILED', '顶层缺 $schema 字段（将被视为 v0.1.0，非 v0.2.0）');
+  }
+  if (!KNOWN_SCHEMA_URIS.includes(obj['$schema'] as string))
+    return result('FAILED', `未识别 $schema URI: ${JSON.stringify(obj['$schema'])}（已知: ${KNOWN_SCHEMA_URIS[0]}）；RFC 规定 SHOULD NOT process`);
+  const skills = obj['skills'];
+  if (!Array.isArray(skills) || skills.length === 0) return result('FAILED', 'skills 缺失或不是非空数组');
+  const problems: string[] = [];
+  skills.forEach((ent: unknown, n: number) => {
+    const tag = `skills[${n}]`;
+    if (typeof ent !== 'object' || ent === null || Array.isArray(ent)) { problems.push(`${tag}: entry 非对象`); return; }
+    const e = ent as Record<string, unknown>;
+    for (const k of Object.keys(e)) if (!DISCOVERY_ENTRY_KEYS.includes(k)) warnings.push(`${tag} 未识别键（RFC：MUST 忽略）: ${k}`);
+    const nm = e['name'];
+    if (typeof nm !== 'string' || !SKILL_NAME_RE.test(nm) || nm.includes('--')) problems.push(`${tag}: name 非法: ${JSON.stringify(nm)}`);
+    if (!DISCOVERY_TYPES.includes(e['type'] as string)) problems.push(`${tag}: type 非 skill-md/archive: ${JSON.stringify(e['type'])}`);
+    const desc = e['description'];
+    if (typeof desc !== 'string' || desc.length < 1 || desc.length > 1024) problems.push(`${tag}: description 非法（须 1–1024 字符串）`);
+    const dg = e['digest'];
+    if (typeof dg !== 'string' || !DIGEST_RE.test(dg)) problems.push(`${tag}: digest 非法（须 sha256:{64 位小写 hex}）: ${JSON.stringify(dg)}`);
+    if (typeof e['url'] !== 'string' || !(e['url'] as string).trim()) problems.push(`${tag}: url 为空或非字符串`);
+    if (mode !== 'local') return; // structural 模式：仅校形状，不解析 url、不碰文件系统、不触网
+    const res = resolveDiscoveryUrl(root, e['url']);
+    if (!res.target) { problems.push(`${tag}: url 非法/逃逸仓库: ${res.why}`); return; }
+    if (!fs.existsSync(res.target) || !fs.statSync(res.target).isFile()) { problems.push(`${tag}: url 指向文件不存在: ${String(e['url'])}`); return; }
+    if (typeof dg === 'string' && DIGEST_RE.test(dg)) {
+      const actual = createHash('sha256').update(fs.readFileSync(res.target)).digest('hex');
+      const want = dg.split(':')[1];
+      if (actual !== want)
+        problems.push(`${tag}: digest 与文件实算不符（${String(e['url'])}）got ${actual.slice(0, 12)}… expected ${want.slice(0, 12)}…`);
+    }
+  });
+  if (problems.length) return result('FAILED', problems.join('; '));
+  let msg = mode === 'local'
+    ? `index.json 合规（$schema=v0.2.0，${skills.length} 条 entry 摘要全部实算一致）`
+    : `index.json 形状合规（$schema=v0.2.0，${skills.length} 条 entry；structural 模式未做本地实算）`;
+  if (warnings.length) msg += '；告警: ' + warnings.join(' | ');
+  return result('PASSED', msg);
 }
 
 function gateCapability(skillDir: string): GateResult {
@@ -302,7 +421,7 @@ function gateRogueKillSwitch(skillDir: string): GateResult {
   return { gate: 'G10-rogue-killswitch', status: 'PASSED', detail: '无自治/循环声明或已配终止条件' };
 }
 
-export function runGates(skillDir: string, expectedDigest?: string): { passed: boolean; report: GateResult[] } {
+export function runGates(skillDir: string, expectedDigest?: string, repoRoot?: string, discoveryMode?: string): { passed: boolean; report: GateResult[] } {
   const dir = path.resolve(skillDir);
   const gates: [string, () => GateResult][] = [
     ['G1-metadata', () => gateMetadata(dir)],
@@ -316,6 +435,7 @@ export function runGates(skillDir: string, expectedDigest?: string): { passed: b
     ['G10-rogue-killswitch', () => gateRogueKillSwitch(dir)],
     ['G16-ethics', () => gateEthics(dir)],
     ['G15-path-safety', () => gatePathSafety(dir)],
+    ['G17-discovery-conformance', () => gateDiscoveryConformance(dir, repoRoot, discoveryMode)],
     ['G12-digest', () => gateDigest(dir, expectedDigest)],
   ];
   const report: GateResult[] = [];
@@ -331,8 +451,9 @@ import { argv } from 'process';
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const skillDir = argv[2];
   const expected = argv[3];
-  if (!skillDir) { console.error('usage: gates.ts <skill_dir> [expected_digest]'); process.exit(2); }
-  const { passed, report } = runGates(skillDir, expected);
+  const discoveryMode = argv[4] || 'local';
+  if (!skillDir) { console.error('usage: gates.ts <skill_dir> [expected_digest] [discovery_mode=local|structural]'); process.exit(2); }
+  const { passed, report } = runGates(skillDir, expected, undefined, discoveryMode);
   console.log(JSON.stringify(report, null, 2));
   console.log('\nRESULT:', passed ? 'PASSED' : 'FAILED');
   process.exit(passed ? 0 : 1);

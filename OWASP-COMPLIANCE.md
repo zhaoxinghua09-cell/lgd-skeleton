@@ -38,7 +38,7 @@
 | 零信任身份 (Ed25519/SPIFFE) | ✅ | ⚠️ 仅要求声明，不签发 | mcp/a2a 模块给出签名 Agent Card 模板 |
 | MCP 安全网关 / 工具投毒检测 | ✅ | ⚠️ 仅要求认证声明 | 接 AGT MCP Security Gateway |
 | Merkle 审计 / 合规证据导出 | ✅ | ❌（digest 防篡改仅覆盖 SKILL.md） | 接 AGT Audit / 本骨架 `--sign` 占位 |
-| 992 conformance tests | ✅ | ✅ 本骨架 12 + 负对照（规模小） | 持续扩充 |
+| 992 conformance tests | ✅ | ✅ 本骨架 13 道门禁 + 负对照（规模小） | 持续扩充 |
 
 ## 四、与 AGT 的关系（不重复造轮子）
 
@@ -50,7 +50,7 @@
 
 ## 五、验证
 
-- build-time 门禁全套负对照：`python scaffold_test.py`（12 项负对照 + 正对照 + fail-closed，全过）。
+- build-time 门禁全套负对照：`python scaffold_test.py`（34 项负对照 + 正对照 + fail-closed，全过）。
 - 单模块核验：`python gates/gates.py modules/<name>`，期望 RESULT: PASSED。
 - digest 防篡改：`index.json` 中每模块 `digest` 须与 `python -c "import hashlib,pathlib;print(hashlib.sha256(pathlib.Path('modules/<name>/SKILL.md').read_bytes()).hexdigest())"` 一致。
 

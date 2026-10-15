@@ -293,15 +293,199 @@ def gate_path_safety(skill_dir):
     return {"gate": "G15-path-safety", "status": "PASSED", "detail": "无路径穿越/受保护区覆写"}
 
 
+def _strip_digest_prefix(s):
+    """去掉可选的 `sha256:` 前缀，返回裸小写 hex（G12/G17 共用口径）。"""
+    s = (s or "").strip()
+    if s.lower().startswith("sha256:"):
+        s = s[len("sha256:"):]
+    return s.lower()
+
+
 def gate_digest(skill_dir, expected=None):
-    """G12 完整性：计算 SKILL.md 的 SHA-256，与预期比对（P7）。"""
+    """G12 完整性：计算 SKILL.md 的 SHA-256，与预期比对（P7）。
+
+    兼容裸 hex 与 RFC v0.2.0 的 `sha256:{64hex}` 两种写法（expected 侧归一化），
+    以适配 `.well-known/agent-skills/index.json` 的 digest 格式。
+    """
     skill_md = skill_dir / "SKILL.md"
     if not skill_md.exists():
         return {"gate": "G12-digest", "status": "FAILED", "detail": "SKILL.md 缺失，无法校验"}
     digest = hashlib.sha256(skill_md.read_bytes()).hexdigest()
-    if expected is not None and expected != digest:
-        return {"gate": "G12-digest", "status": "FAILED", "detail": f"digest 不匹配 (got {digest[:12]}… expected {expected[:12]}…)"}
-    return {"gate": "G12-digest", "status": "PASSED", "detail": f"sha256={digest[:16]}…"}
+    exp = _strip_digest_prefix(expected) if expected is not None else None
+    if exp is not None and exp != digest:
+        return {"gate": "G12-digest", "status": "FAILED", "detail": f"digest 不匹配 (got {digest[:12]}… expected {exp[:12]}…)"}
+    return {"gate": "G12-digest", "status": "PASSED", "detail": f"sha256:{digest[:16]}…"}
+
+
+# ---------------------------------------------------------------------------
+# G17 发现层一致性（Agent Skills Discovery RFC v0.2.0）· 两模式
+#   local      ：读本地 index.json，逐条对 url 指向的本地文件实算 SHA-256 并与 digest 比对
+#   structural ：仅校形状（顶层键 / entry 键集 / 字段类型·长度·字符集 / $schema 取值），
+#                不解析 url、不碰文件系统、不触网 —— 用于校验远端索引样本（如外部正向对照）
+# fail-closed：文件缺失 / JSON 解析失败 / 模式未指定或非法 => FAILED（绝不静默放行）
+# 注：archive 型条目的额外要求（digest 校验后拒 `..`/绝对路径/逃逸 symlink·hardlink/解压炸弹）
+#     仅 **applicable only to type=archive**；本仓 index.json 当前无 archive 条目，未触发。
+#     客户端 SHALL NOT 默认执行 scripts/（规范约束，非本 build-time 门禁可测项）。
+# ---------------------------------------------------------------------------
+DISCOVERY_INDEX_REL = ".well-known/agent-skills/index.json"
+# 已知 schema URI 白名单（$schema 是 opaque identifier，RFC v0.2.0）
+KNOWN_SCHEMA_URIS = (
+    "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+)
+DISCOVERY_TOP_KEYS = ("$schema", "skills")
+DISCOVERY_ENTRY_KEYS = ("name", "type", "description", "url", "digest")
+DISCOVERY_TYPES = ("skill-md", "archive")
+# 合法模式：local（本地实算校验）/ structural（仅校形状，不触网）
+DISCOVERY_MODES = ("local", "structural")
+# name：1–64 字符、仅 a-z0-9-、不得首尾或连续连字符（Agent Skills 命名规范）
+SKILL_NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
+DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_ENC_TRAVERSAL_RE = re.compile(r"%2e%2e|%2f|%5c", re.I)
+_ABS_FS_RE = re.compile(r"^[A-Za-z]:[\\/]")
+_URI_SCHEME_RE = re.compile(r"^[a-z][a-z0-9+.\-]*://", re.I)
+
+
+def _resolve_repo_root(skill_dir, repo_root=None):
+    """定位发现层所在仓库根：显式参数 > 自 skill_dir 向上找索引 > gates/ 的父目录。"""
+    if repo_root is not None:
+        return Path(repo_root).resolve()
+    cur = Path(skill_dir).resolve()
+    for cand in (cur, *cur.parents):
+        if (cand / DISCOVERY_INDEX_REL).is_file():
+            return cand
+    return Path(__file__).resolve().parent.parent
+
+
+def _resolve_discovery_url(repo_root, url):
+    """按 RFC 3986 相对仓库根解析 url；返回 (绝对路径, 失败原因)。失败时路径为 None。
+
+    拒绝：UNC/网络路径、绝对文件系统路径（C:/...）、带 scheme 的外部 URL、
+    `..` 逃逸段、百分号编码穿越（%2e%2e / %2f / %5c）。路径绝对（前导 /）按仓库根解析。
+    """
+    if not isinstance(url, str) or not url.strip():
+        return None, "url 为空或非字符串"
+    u = url.strip()
+    if u.startswith("\\") or u.startswith("//"):
+        return None, "UNC/网络路径"
+    if _ABS_FS_RE.match(u):
+        return None, "绝对文件系统路径"
+    if _URI_SCHEME_RE.match(u):
+        return None, "外部绝对 URL（无法在仓库内校验）"
+    if _ENC_TRAVERSAL_RE.search(u):
+        return None, "百分号编码路径穿越"
+    norm = u.replace("\\", "/")
+    segs = [s for s in norm.split("/") if s not in ("", ".")]
+    if any(s == ".." for s in segs):
+        return None, "路径穿越 '..'"
+    rel = "/".join(segs)
+    if not rel:
+        return None, "url 无有效路径段"
+    base = Path(repo_root).resolve()
+    target = (base / rel).resolve()
+    try:
+        target.relative_to(base)
+    except ValueError:
+        return None, "解析后逃逸出仓库"
+    return target, None
+
+
+def gate_discovery_conformance(skill_dir, repo_root=None, mode=None, index_path=None):
+    """G17 发现层一致性：校验 .well-known/agent-skills/index.json 符合 RFC v0.2.0。
+
+    两模式（mode 必填，缺省/非法 => FAILED，fail-closed）：
+      - "local"      ：校形状 + 对每条 url 指向的本地文件实算 SHA-256 并与 digest 比对；
+      - "structural" ：仅校形状（顶层键 / entry 键集 / 字段类型·长度·字符集 / $schema 取值），
+                       不解析 url、不碰文件系统、不触网。
+    检查：存在 / 合法 JSON / 顶层键 / `$schema` 白名单 / entry 全字段 / name·type·description·digest 形状。
+    口径：未识别顶层键与 entry 键 => 告警（RFC：MUST ignore unrecognized fields，不 FAIL）；
+    缺 `$schema` => RFC 视为 v0.1.0 => 告警且 FAIL（本骨架发布 v0.2.0 索引，v0.1.0 形态不合规）；
+    未识别 `$schema` URI => FAIL（RFC：SHOULD NOT process）。
+
+    index_path：可选，显式指定被校验的索引文件（用于校验仓库外样本，如外部正向对照）。
+    """
+    warnings = []
+
+    def result(status, detail):
+        r = {"gate": "G17-discovery-conformance", "status": status, "detail": detail}
+        if warnings:
+            r["warnings"] = list(warnings)
+        return r
+
+    if mode not in DISCOVERY_MODES:
+        return result("FAILED", f"模式未指定或非法（须 {' 或 '.join(DISCOVERY_MODES)}），fail-closed 拒绝放行")
+
+    root = _resolve_repo_root(skill_dir, repo_root)
+    idx = Path(index_path) if index_path is not None else (root / DISCOVERY_INDEX_REL)
+
+    if not idx.is_file():
+        return result("FAILED", f"缺失发现层索引 {idx}")
+    try:
+        data = json.loads(idx.read_bytes().decode("utf-8"))
+    except Exception as e:
+        return result("FAILED", f"index.json 非法 JSON: {type(e).__name__}: {e}")
+    if not isinstance(data, dict):
+        return result("FAILED", "index.json 顶层不是对象")
+
+    extras = [k for k in data.keys() if k not in DISCOVERY_TOP_KEYS]
+    if extras:
+        warnings.append("未识别顶层键（RFC：客户端 MUST 忽略）: " + ", ".join(extras))
+    if "$schema" not in data:
+        warnings.append("缺 $schema：RFC 规定按 v0.1.0 处理；本骨架发布 v0.2.0 索引，故判不合规")
+        return result("FAILED", "顶层缺 $schema 字段（将被视为 v0.1.0，非 v0.2.0）")
+    schema = data.get("$schema")
+    if schema not in KNOWN_SCHEMA_URIS:
+        return result("FAILED", f"未识别 $schema URI: {schema!r}（已知: {KNOWN_SCHEMA_URIS[0]}）；RFC 规定 SHOULD NOT process")
+
+    skills = data.get("skills")
+    if not isinstance(skills, list) or not skills:
+        return result("FAILED", "skills 缺失或不是非空数组")
+
+    problems = []
+    for n, ent in enumerate(skills):
+        tag = f"skills[{n}]"
+        if not isinstance(ent, dict):
+            problems.append(f"{tag}: entry 非对象")
+            continue
+        for k in ent.keys():
+            if k not in DISCOVERY_ENTRY_KEYS:
+                warnings.append(f"{tag} 未识别键（RFC：MUST 忽略）: {k}")
+        nm = ent.get("name")
+        if not isinstance(nm, str) or not SKILL_NAME_RE.match(nm) or "--" in nm:
+            problems.append(f"{tag}: name 非法（须 ^[a-z0-9](?:[a-z0-9-]{{0,62}}[a-z0-9])?$ 且无连续连字符）: {nm!r}")
+        if ent.get("type") not in DISCOVERY_TYPES:
+            problems.append(f"{tag}: type 非 skill-md/archive: {ent.get('type')!r}")
+        desc = ent.get("description")
+        if not isinstance(desc, str) or not (1 <= len(desc) <= 1024):
+            problems.append(f"{tag}: description 非法（须 1–1024 字符串）")
+        dg = ent.get("digest")
+        if not isinstance(dg, str) or not DIGEST_RE.match(dg):
+            problems.append(f"{tag}: digest 非法（须 sha256:{{64 位小写 hex}}）: {dg!r}")
+        if not isinstance(ent.get("url"), str) or not ent.get("url").strip():
+            problems.append(f"{tag}: url 为空或非字符串")
+        if mode != "local":
+            continue  # structural 模式：仅校形状，不解析 url、不碰文件系统、不触网
+        target, why = _resolve_discovery_url(root, ent.get("url"))
+        if target is None:
+            problems.append(f"{tag}: url 非法/逃逸仓库: {why}")
+            continue
+        if not target.is_file():
+            problems.append(f"{tag}: url 指向文件不存在: {ent.get('url')}")
+            continue
+        if isinstance(dg, str) and DIGEST_RE.match(dg):
+            actual = hashlib.sha256(target.read_bytes()).hexdigest()
+            want = dg.split(":", 1)[1]
+            if actual != want:
+                problems.append(f"{tag}: digest 与文件实算不符（{ent.get('url')}）got {actual[:12]}… expected {want[:12]}…")
+
+    if problems:
+        return result("FAILED", "; ".join(problems))
+    if mode == "local":
+        msg = f"index.json 合规（$schema=v0.2.0，{len(skills)} 条 entry 摘要全部实算一致）"
+    else:
+        msg = f"index.json 形状合规（$schema=v0.2.0，{len(skills)} 条 entry；structural 模式未做本地实算）"
+    if warnings:
+        msg += "；告警: " + " | ".join(warnings)
+    return result("PASSED", msg)
 
 
 # ---------------------------------------------------------------------------
@@ -435,8 +619,13 @@ def gate_rogue_killswitch(skill_dir):
     return {"gate": "G10-rogue-killswitch", "status": "PASSED", "detail": "无自治/循环声明或已配终止条件"}
 
 
-def run_gates(skill_dir, expected_digest=None):
-    """运行全部门禁，fail-closed。返回 (passed, report)。"""
+def run_gates(skill_dir, expected_digest=None, repo_root=None, discovery_mode=None):
+    """运行全部门禁，fail-closed。返回 (passed, report)。
+
+    repo_root：发现层（G17）所在仓库根；缺省时自 skill_dir 向上自动定位。
+    discovery_mode：G17 模式（"local" | "structural"）；缺省 None => G17 FAILED（fail-closed，
+                    调用方须显式指定；CLI 与 scaffold 均显式传 "local"）。
+    """
     skill_dir = Path(skill_dir)
     gates = [
         ("G1-metadata", lambda: gate_metadata(skill_dir)),
@@ -450,6 +639,7 @@ def run_gates(skill_dir, expected_digest=None):
         ("G10-rogue-killswitch", lambda: gate_rogue_killswitch(skill_dir)),
         ("G16-ethics", lambda: gate_ethics(skill_dir)),
         ("G15-path-safety", lambda: gate_path_safety(skill_dir)),
+        ("G17-discovery-conformance", lambda: gate_discovery_conformance(skill_dir, repo_root, discovery_mode)),
         ("G12-digest", lambda: gate_digest(skill_dir, expected_digest)),
     ]
     report = []
@@ -464,11 +654,12 @@ def run_gates(skill_dir, expected_digest=None):
 
 def main():
     if len(sys.argv) < 2:
-        print("usage: gates.py <skill_dir> [expected_digest]", file=sys.stderr)
+        print("usage: gates.py <skill_dir> [expected_digest] [discovery_mode=local|structural]", file=sys.stderr)
         return 2
     skill_dir = sys.argv[1]
     expected = sys.argv[2] if len(sys.argv) > 2 else None
-    passed, report = run_gates(skill_dir, expected)
+    discovery_mode = sys.argv[3] if len(sys.argv) > 3 else "local"
+    passed, report = run_gates(skill_dir, expected, discovery_mode=discovery_mode)
     print(json.dumps(report, ensure_ascii=False, indent=2))
     print("\nRESULT:", "PASSED" if passed else "FAILED")
     return 0 if passed else 1

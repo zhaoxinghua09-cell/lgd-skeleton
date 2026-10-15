@@ -3,7 +3,7 @@
 > 本文件是 AI 编程 Agent 与本仓库交互的**唯一指令真源**（遵循 Anthropic/OpenAI AGENTS.md 范式，控制在 200 行内，避免上下文膨胀与遵循率下降）。人类贡献者见 README.md 的"参与"一节。
 
 ## 这是什么
-LGD 母骨架是一套 **Agent 无关、零依赖、fail-closed** 的开源技能/工具骨架：说想法即生成骨架、自动跑安全门禁、可选模块按需加载（套娃）。差异化护城河＝内建 12 道 fail-closed 门禁（覆盖 OWASP Agentic Top 10 2026 build-time）＋伦理护栏（完整 G1–G16 企业级 taxonomy 见 OWASP-COMPLIANCE.md）。
+LGD 母骨架是一套 **Agent 无关、零依赖、fail-closed** 的开源技能/工具骨架：说想法即生成骨架、自动跑安全门禁、可选模块按需加载（套娃）。差异化护城河＝内建 13 道 fail-closed 门禁（覆盖 OWASP Agentic Top 10 2026 build-time）＋伦理护栏（完整 G1–G17 企业级 taxonomy 见 OWASP-COMPLIANCE.md）。
 
 ## AI 贡献者硬规则（门禁钩子，不可跳过）
 1. **任何对 `modules/` 的改动必须先跑门禁**：`python gates/gates.py <module_dir>`（或 `node --experimental-strip-types gates/gates.ts <module_dir>`）。FAILED 不得提交。

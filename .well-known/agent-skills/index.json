@@ -1,44 +1,47 @@
 {
-  "schema": "https://schema.cloudflare.com/agent-skills/discovery/v0.2.0",
-  "name": "lgd-skeleton",
-  "description": "LGD 母骨架可选模块清单（Agent 无关、fail-closed 门禁，覆盖 OWASP Agentic Top 10 2026 build-time）。加载前须校验 digest。",
-  "generated": "2026-10-11",
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
   "skills": [
+    {
+      "name": "a2a",
+      "type": "skill-md",
+      "description": "将本骨架生成的技能作为 Agent-to-Agent (A2A) 可互操作智能体，携带签名身份（Agent Card）与其他 Agent 安全协作。Use when 需要让技能以标准化智能体身份接入多 Agent 网格、或与其他智能体做可信消息传递时加载。",
+      "url": "modules/a2a/SKILL.md",
+      "digest": "sha256:754032a5ab90ba4c3e7161ca8266afaeb59d349aed710bf67600c5b363ca32b5"
+    },
     {
       "name": "clone-site",
       "type": "skill-md",
+      "description": "把自有或已获授权的网站重建为可维护的 Next.js 代码库。Use when 需要迁移遗留站点、恢复丢失源码、或学习某站点的布局实现、且你拥有或已获授权时加载。",
       "url": "modules/clone-site/SKILL.md",
-      "digest": "01d92105224d08828dfce14119354998fb5ffe77988b291c41f4bf6ac65a4508"
+      "digest": "sha256:01d92105224d08828dfce14119354998fb5ffe77988b291c41f4bf6ac65a4508"
     },
     {
       "name": "github",
       "type": "skill-md",
+      "description": "在已授权仓库上执行 Git/GitHub 操作（提交、建分支、开合并请求、同步）。Use when 任务涉及提交代码、创建分支、开 PR 或同步远程仓库时加载。",
       "url": "modules/github/SKILL.md",
-      "digest": "6ba4871c6d38f93393b7dd52ea4a7ef12014631b263936d7c6c184c15e353246"
-    },
-    {
-      "name": "pdf",
-      "type": "skill-md",
-      "url": "modules/pdf/SKILL.md",
-      "digest": "948da1d752c4ede054d3f5e0dd119046753d457cb9641e5ae55cf7c4a1e433f5"
-    },
-    {
-      "name": "reverse",
-      "type": "skill-md",
-      "url": "modules/reverse/SKILL.md",
-      "digest": "0009f369383d7f6c79136b37268b5c3e82c149cdf98369337b3c83bdb11eab12"
+      "digest": "sha256:6ba4871c6d38f93393b7dd52ea4a7ef12014631b263936d7c6c184c15e353246"
     },
     {
       "name": "mcp",
       "type": "skill-md",
+      "description": "将本骨架生成的技能暴露为 Model Context Protocol (MCP) 服务器，供任意 MCP 客户端按工具调用。Use when 需要把技能接入 Claude/Cursor/IDE 等 MCP 生态、或以标准化工具协议对外提供能力时加载。",
       "url": "modules/mcp/SKILL.md",
-      "digest": "ba92c1aac88049d781ecf6c17274a33b1c999bf6a335ea42ce934cec761eceed"
+      "digest": "sha256:ba92c1aac88049d781ecf6c17274a33b1c999bf6a335ea42ce934cec761eceed"
     },
     {
-      "name": "a2a",
+      "name": "pdf",
       "type": "skill-md",
-      "url": "modules/a2a/SKILL.md",
-      "digest": "754032a5ab90ba4c3e7161ca8266afaeb59d349aed710bf67600c5b363ca32b5"
+      "description": "PDF 表单自动填充与处理工具。Use when 用户需要填表、合并、拆分或提取 PDF 表单内容时加载。",
+      "url": "modules/pdf/SKILL.md",
+      "digest": "sha256:948da1d752c4ede054d3f5e0dd119046753d457cb9641e5ae55cf7c4a1e433f5"
+    },
+    {
+      "name": "reverse",
+      "type": "skill-md",
+      "description": "在自有或已获书面授权的目标上做功能机理分析与证据归集。Use when 需要分析某应用或二进制的实现原理、调查某项功能如何运作、且你拥有或已获授权时加载。",
+      "url": "modules/reverse/SKILL.md",
+      "digest": "sha256:0009f369383d7f6c79136b37268b5c3e82c149cdf98369337b3c83bdb11eab12"
     }
   ]
 }

@@ -21,5 +21,8 @@ Thumbs.db
 # Red-team sandbox (local, temporary)
 _lgd_skeleton_rt_bench/
 
+# Test scratch (workspace-local temp, cleaned by the test harness)
+._test_scratch/
+
 # Logs
 *.log

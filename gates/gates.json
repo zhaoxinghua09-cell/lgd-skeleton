@@ -1,13 +1,14 @@
 {
   "schema": "lgd.ai-collab/gates@1",
   "semantics": "fail-closed",
-  "description": "LGD 母骨架技能/工具层门禁契约。移植自 .ai-collab G1–G16 企业级门禁，保留 fail-closed 语义。",
+  "description": "LGD 母骨架技能/工具层门禁契约。移植自 .ai-collab G1–G16 企业级门禁，并新增 G17 发现层一致性（Agent Skills Discovery RFC v0.2.0），保留 fail-closed 语义。",
   "gates": [
     {"id": "G1-metadata", "name": "元数据门禁", "rule": "SKILL.md 必须含 name+description，description 含'何时使用'信号且>=20字符", "on_fail": "FAILED"},
     {"id": "G3-secret-scan", "name": "秘密扫描", "rule": "scripts/ 下禁止硬编码 api_key/secret/token/jwt/service_role", "on_fail": "FAILED"},
     {"id": "G4-injection-scan", "name": "注入扫描", "rule": "禁止 eval/exec/os.system/shell=True/HTML 注入", "on_fail": "FAILED"},
     {"id": "G16-ethics", "name": "伦理门禁", "rule": "技能声明/代码不得含认证绕过/数据窃取/钓鱼/未授权访问等明确危险意图", "on_fail": "FAILED"},
     {"id": "G15-path-safety", "name": "路径安全", "rule": "禁止 ../ 穿越、禁止覆写受保护前缀(gates/.well-known/scaffold.py/AGENTS.md/llms.txt)", "on_fail": "FAILED"},
-    {"id": "G12-digest", "name": "完整性校验", "rule": "SKILL.md 的 SHA-256 须与发布 index.json 中的 digest 一致", "on_fail": "FAILED"}
+    {"id": "G12-digest", "name": "完整性校验", "rule": "SKILL.md 的 SHA-256 须与发布 index.json 中的 digest 一致（兼容裸 hex 与 RFC v0.2.0 的 sha256:{64hex} 写法）", "on_fail": "FAILED"},
+    {"id": "G17-discovery-conformance", "name": "发现层一致性", "rule": ".well-known/agent-skills/index.json 须符合 Agent Skills Discovery RFC v0.2.0。两模式（mode 缺省/非法=>FAILED，fail-closed）：local=校形状+对每条 url 指向的本地文件实算 SHA-256 并与 digest 比对；structural=仅校形状（不解析 url、不碰文件系统、不触网）。形状：顶层仅 $schema+skills；$schema 命中已知 URI 白名单；每条 entry 恰含 name/type/description/url/digest；name 匹配 ^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$ 且无连续连字符；type∈{skill-md,archive}；description 长度 1–1024；local 模式 url 相对仓库根解析后须落在仓库内（禁 .. 逃逸/绝对路径/UNC/%2e%2e 编码穿越）；digest 匹配 ^sha256:[0-9a-f]{64}$ 且与文件原始字节实算一致。未识别顶层/entry 键=>告警（RFC：MUST 忽略）；未识别或缺失 $schema=>FAILED", "on_fail": "FAILED"}
   ]
 }

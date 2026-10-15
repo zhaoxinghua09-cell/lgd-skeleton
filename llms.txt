@@ -1,6 +1,6 @@
 # LGD 母骨架（lgd-skeleton）
 
-一套 Agent 无关、零依赖、fail-closed 的开源技能/工具骨架。说想法即生成骨架、自动跑 LGD G1–G16 企业级门禁与伦理护栏，可选模块按需加载（套娃）。
+一套 Agent 无关、零依赖、fail-closed 的开源技能/工具骨架。说想法即生成骨架、自动跑 LGD G1–G17 企业级门禁与伦理护栏，可选模块按需加载（套娃）。
 
 ## 适合谁
 - 个人开发者：零门槛"说想法即搭建"，自动获得企业级安全门禁，省积分、提速度。
@@ -8,14 +8,14 @@
 
 ## 核心文件
 - scaffold.py — 说想法→生成技能骨架＋自动门禁＋签名卡（stdlib-only，零外部依赖）
-- gates/gates.py（Python）与 gates/gates.ts（TypeScript 双端口）—— fail-closed 门禁运行器：G1 元数据 / G3 秘密扫描 / G4 注入扫描 / G5 最小权限(ASI-02) / G6 记忆投毒(ASI-06) / G7 Agent 间认证(ASI-07) / G8 输出处理(ASI-05) / G9 人-Agent 监督(ASI-09) / G10 流氓 Agent kill-switch(ASI-10) / G12 完整性 / G15 路径安全 / G16 伦理
+- gates/gates.py（Python）与 gates/gates.ts（TypeScript 双端口）—— fail-closed 门禁运行器：G1 元数据 / G3 秘密扫描 / G4 注入扫描 / G5 最小权限(ASI-02) / G6 记忆投毒(ASI-06) / G7 Agent 间认证(ASI-07) / G8 输出处理(ASI-05) / G9 人-Agent 监督(ASI-09) / G10 流氓 Agent kill-switch(ASI-10) / G12 完整性 / G15 路径安全 / G16 伦理 / G17 发现层一致性（RFC v0.2.0，local/structural 两模式）
 - AGENTS.md — AI 与人类贡献者指令真源
 - modules/ — 可选子骨架：clone-site / github / pdf / reverse / mcp / a2a（套娃，按需加载；mcp/a2a 带 G7 Agent 间认证声明）
-- OWASP-COMPLIANCE.md — build-time 12 道门禁对 OWASP Agentic Top 10 (2026) ASI-01..10 的映射，及运行时项须配合 AGT/容器的诚实边界
+- OWASP-COMPLIANCE.md — build-time 13 道门禁对 OWASP Agentic Top 10 (2026) ASI-01..10 的映射，及运行时项须配合 AGT/容器的诚实边界
 - .well-known/agent-skills/index.json — 机器可发现清单（6 个模块各带 SHA-256 digest）
 
 ## 关键事实（可核验）
-- 门禁经双端口（Python + TypeScript）负对照测试：合规技能全过、12 类坏输入必 FAIL（见 scaffold_test.py 与 gates/gates.test.ts，全部对照通过）。
+- 门禁经双端口（Python + TypeScript）负对照测试：合规技能全过、34 类负对照必 FAIL（见 scaffold_test.py 与 gates/gates.test.ts，全部对照通过）。
 - 许可：MIT（可商用、可修改、可私有化分发）。
 
 ## 链接

@@ -6,11 +6,11 @@ All notable changes to `lgd-skeleton` are documented here. Format follows [Keep 
 
 ### Added
 - fail-closed governance gates in two zero-dependency ports: `gates/gates.py` (Python stdlib) and `gates/gates.ts` (Node built-ins).
-- 12 gates covering OWASP Agentic Top 10 (2026) build-time: G1 metadata, G3 secret-scan, G4 injection-scan, G5 least-privilege (ASI-02), G6 memory-poisoning (ASI-06), G7 inter-agent auth (ASI-07), G8 output-handling (ASI-05), G9 human-oversight (ASI-09), G10 rogue-kill-switch (ASI-10), G12 integrity (SHA-256), G15 path-safety, G16 ethics.
+- 13 gates covering OWASP Agentic Top 10 (2026) build-time: G1 metadata, G3 secret-scan, G4 injection-scan, G5 least-privilege (ASI-02), G6 memory-poisoning (ASI-06), G7 inter-agent auth (ASI-07), G8 output-handling (ASI-05), G9 human-oversight (ASI-09), G10 rogue-kill-switch (ASI-10), G12 integrity (SHA-256), G15 path-safety, G16 ethics, G17 discovery-conformance (Cloudflare Agent Skills Discovery RFC v0.2.0; `local`/`structural` two modes, fail-closed on unspecified mode).
 - `scaffold.py`: "say idea → generate skill skeleton + auto gates + sign card" (stdlib-only).
 - 6 optional modules: `clone-site`, `github`, `pdf`, `reverse`, `mcp`, `a2a` (mcp/a2a carry G7 inter-agent auth declarations).
 - AI-native discovery: `llms.txt` + `.well-known/agent-skills/index.json` (per-module SHA-256 digest; Cloudflare Agent Skills Discovery RFC v0.2.0).
-- `scaffold_test.py` and `gates/gates.test.ts` negative-control suites (20 bad inputs + 1 anti-false-positive control + positive control + fail-closed; 23 checks per port).
+- `scaffold_test.py` and `gates/gates.test.ts` negative-control suites (34 negative controls + 6 positive/anti-false-positive controls incl. G17 two-mode + external sample; 40 checks per port).
 - `OWASP-COMPLIANCE.md`: honest build-time vs runtime boundary.
 
 ### Hardened (M8, 2026-10-11)
