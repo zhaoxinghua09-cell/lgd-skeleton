@@ -294,7 +294,8 @@ function flipHexLast(h: string): string { return h.slice(0, -1) + (h.slice(-1) !
   check('G17 fail-closed: 模式未指定 => FAILED', r.status === 'FAILED');
 }
 {
-  const ext = path.join(repoRoot, '..', '_cf_rfc_fetch', 'isitagentready.index.json');
+  // fixture 内置于 tests/fixtures/（自包含，克隆即可跑；模拟远端索引形状，不解析 url）
+  const ext = path.join(repoRoot, 'tests', 'fixtures', 'isitagentready.index.json');
   if (fs.existsSync(ext)) {
     const r = gateDiscoveryConformance(repoRoot, undefined, 'structural', ext);
     check('G17 外部正向对照: isitagentready.index.json structural => PASSED', r.status === 'PASSED');

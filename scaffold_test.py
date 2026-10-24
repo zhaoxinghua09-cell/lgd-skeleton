@@ -424,8 +424,9 @@ with scratch_dir() as tmp:
     res_nomode = G.gate_discovery_conformance(n_dir)
     check("G17 fail-closed: 模式未指定 => FAILED", res_nomode["status"] == "FAILED")
 
-# G17 外部正向对照：isitagentready.com 真实合规索引 => structural 模式全绿（不触网）
-EXT_INDEX = ROOT.parent / "_cf_rfc_fetch" / "isitagentready.index.json"
+# G17 外部正向对照：isitagentready 风格合规索引 => structural 模式全绿（不触网）
+# fixture 内置于 tests/fixtures/（自包含，克隆即可跑；模拟远端索引形状，不解析 url）
+EXT_INDEX = ROOT / "tests" / "fixtures" / "isitagentready.index.json"
 if EXT_INDEX.is_file():
     res_ext = G.gate_discovery_conformance(ROOT, mode="structural", index_path=EXT_INDEX)
     check("G17 外部正向对照: isitagentready.index.json structural => PASSED", res_ext["status"] == "PASSED")

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "terminal-command-runner",
+      "type": "skill-md",
+      "description": "Runs terminal commands safely with allow-list enforcement. Use when the user needs a shell command executed or a CLI tool invoked.",
+      "url": "https://cdn.isitagentready.com/skills/terminal-command-runner/SKILL.md",
+      "digest": "sha256:aa11bb22cc33dd44ee55ff66aa77bb88cc99dda0ee11ff22aa33bb44cc55dd66"
+    },
+    {
+      "name": "web-fetch-summarizer",
+      "type": "skill-md",
+      "description": "Fetches a web page and returns a structured summary. Use when the user asks to summarize or extract information from a URL.",
+      "url": "https://cdn.isitagentready.com/skills/web-fetch-summarizer/SKILL.md",
+      "digest": "sha256:00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    }
+  ]
+}
