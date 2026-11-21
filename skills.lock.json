@@ -1,0 +1,58 @@
+{
+  "algorithm": "sha256(sorted relpath + NUL + file sha256, per line)",
+  "history": [
+    {
+      "root_digest": "75bf1a86f9689ac68550b121e7d9c9545b514154e9ffa6f1376ba265d3ef647f",
+      "sequence": 1
+    }
+  ],
+  "root_digest": "75bf1a86f9689ac68550b121e7d9c9545b514154e9ffa6f1376ba265d3ef647f",
+  "schema_version": 2,
+  "sequence": 1,
+  "skill_count": 6,
+  "skills": [
+    {
+      "declared_name": "a2a",
+      "digest": "95dddceeb6f717931098343b746e151bd08b677718032e62424c8cea039419c7",
+      "file_count": 1,
+      "has_description": true,
+      "path": "modules/a2a"
+    },
+    {
+      "declared_name": "clone-site",
+      "digest": "550725ff0461d10a3ba24c5914309c20169d740a08dd021712176d1e51aba734",
+      "file_count": 1,
+      "has_description": true,
+      "path": "modules/clone-site"
+    },
+    {
+      "declared_name": "github",
+      "digest": "5943e97e1be8ca5e430bb4bcc5d80a5a55df16de859f8b8c7a4f32b320f59775",
+      "file_count": 1,
+      "has_description": true,
+      "path": "modules/github"
+    },
+    {
+      "declared_name": "mcp",
+      "digest": "4726c54285d03a43f5df4f1cfb6063dc21fa5183e71ea9a114ab0825487c0f09",
+      "file_count": 1,
+      "has_description": true,
+      "path": "modules/mcp"
+    },
+    {
+      "declared_name": "pdf",
+      "digest": "5b4a8fb532cd1a3dbced3119de2664779778b7173dde8dbd0d95ac792b0eeae4",
+      "file_count": 1,
+      "has_description": true,
+      "path": "modules/pdf"
+    },
+    {
+      "declared_name": "reverse",
+      "digest": "149baeba5186a4626be7390845bdfb65bc7c279535c62f543fff02af3b53a618",
+      "file_count": 1,
+      "has_description": true,
+      "path": "modules/reverse"
+    }
+  ],
+  "validated_against": []
+}

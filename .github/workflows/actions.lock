@@ -30,3 +30,4 @@ dependencies:
         commit: 'sha1-ff98106e4c7b2bc287b24eaf42907196329070c7'
         owner_id: 90395851
         repo_id: 242854909
+    '.github/workflows/skill-lock.yml': []
