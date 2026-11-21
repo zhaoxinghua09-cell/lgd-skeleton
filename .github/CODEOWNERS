@@ -1,0 +1,11 @@
+# CODEOWNERS — routing and accountability.
+# This file documents ownership and routes review requests; it does NOT require a
+# second human approval (solo-maintainer topology). Branch gating is enforced by
+# the "lgd-standard-gate" ruleset plus required status checks.
+
+*                                   @zhaoxinghua09-cell
+
+# High-risk paths: CI, release and security policy.
+/.github/                           @zhaoxinghua09-cell
+/.github/workflows/                 @zhaoxinghua09-cell
+/SECURITY.md                        @zhaoxinghua09-cell
