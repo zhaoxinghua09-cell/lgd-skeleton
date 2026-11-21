@@ -5,6 +5,7 @@ version: 0.1.0
 lgd:
   gates: [G1, G3, G4, G5, G6, G7, G8, G9, G10, G16, G15, G12]
   fail-closed: true
+capabilities: [read]
 ---
 
 # 逆向分析（受控子骨架）

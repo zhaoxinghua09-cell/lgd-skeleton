@@ -4,51 +4,55 @@
     {
       "root_digest": "75bf1a86f9689ac68550b121e7d9c9545b514154e9ffa6f1376ba265d3ef647f",
       "sequence": 1
+    },
+    {
+      "root_digest": "7b58582de5df92a98cc263d9b41e0460093a7b38e6089e3e4884e6a43872de32",
+      "sequence": 2
     }
   ],
-  "root_digest": "75bf1a86f9689ac68550b121e7d9c9545b514154e9ffa6f1376ba265d3ef647f",
+  "root_digest": "7b58582de5df92a98cc263d9b41e0460093a7b38e6089e3e4884e6a43872de32",
   "schema_version": 2,
-  "sequence": 1,
+  "sequence": 2,
   "skill_count": 6,
   "skills": [
     {
       "declared_name": "a2a",
-      "digest": "95dddceeb6f717931098343b746e151bd08b677718032e62424c8cea039419c7",
+      "digest": "bb063362701e4ae2e0f483de55a4bfc47b83ec4734eb1227e45cf871243c6ddf",
       "file_count": 1,
       "has_description": true,
       "path": "modules/a2a"
     },
     {
       "declared_name": "clone-site",
-      "digest": "550725ff0461d10a3ba24c5914309c20169d740a08dd021712176d1e51aba734",
+      "digest": "24ee010383343fe9c4b71b441e2907e5137339b24eee4fe5a8106c965d4ba27e",
       "file_count": 1,
       "has_description": true,
       "path": "modules/clone-site"
     },
     {
       "declared_name": "github",
-      "digest": "5943e97e1be8ca5e430bb4bcc5d80a5a55df16de859f8b8c7a4f32b320f59775",
+      "digest": "9ee6edc80f19b722c1f440a71de15f495db852f9f4c0d6440eee22862ab004f1",
       "file_count": 1,
       "has_description": true,
       "path": "modules/github"
     },
     {
       "declared_name": "mcp",
-      "digest": "4726c54285d03a43f5df4f1cfb6063dc21fa5183e71ea9a114ab0825487c0f09",
+      "digest": "35e31a2091d10a43beb192d3906d3703c8a00df3de5add9f9dd9d87b7a4e0026",
       "file_count": 1,
       "has_description": true,
       "path": "modules/mcp"
     },
     {
       "declared_name": "pdf",
-      "digest": "5b4a8fb532cd1a3dbced3119de2664779778b7173dde8dbd0d95ac792b0eeae4",
+      "digest": "11cbb8ccb86386a2715896f8c1bab179dc157b450696c1d475d8af6a201cbe42",
       "file_count": 1,
       "has_description": true,
       "path": "modules/pdf"
     },
     {
       "declared_name": "reverse",
-      "digest": "149baeba5186a4626be7390845bdfb65bc7c279535c62f543fff02af3b53a618",
+      "digest": "6eac4bdfefbdc8f0cd7f8f5b931d48acab2950b6a4e71eafc8ecd27897587857",
       "file_count": 1,
       "has_description": true,
       "path": "modules/reverse"
