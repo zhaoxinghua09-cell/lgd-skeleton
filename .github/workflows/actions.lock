@@ -9,6 +9,7 @@ workflows:
         - 'actions/setup-python@v5.6.0'
         - 'gitleaks/gitleaks-action@v2.3.9'
     '.github/workflows/lgd-ci.yml': []
+    '.github/workflows/skill-lock.yml': []
 dependencies:
     'actions/checkout@v4.4.0':
         ref: 'v4.4.0'
@@ -30,4 +31,3 @@ dependencies:
         commit: 'sha1-ff98106e4c7b2bc287b24eaf42907196329070c7'
         owner_id: 90395851
         repo_id: 242854909
-    '.github/workflows/skill-lock.yml': []
