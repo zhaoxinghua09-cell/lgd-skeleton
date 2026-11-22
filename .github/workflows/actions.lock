@@ -10,6 +10,8 @@ workflows:
         - 'gitleaks/gitleaks-action@v2.3.9'
     '.github/workflows/lgd-ci.yml': []
     '.github/workflows/skill-lock.yml': []
+    '.github/workflows/attest.yml':
+        - 'actions/attest-build-provenance@v4.2.2'
 dependencies:
     'actions/checkout@v4.4.0':
         ref: 'v4.4.0'
@@ -31,3 +33,15 @@ dependencies:
         commit: 'sha1-ff98106e4c7b2bc287b24eaf42907196329070c7'
         owner_id: 90395851
         repo_id: 242854909
+    'actions/attest-build-provenance@v4.2.2':
+        ref: 'v4.2.2'
+        commit: 'sha1-4d101475d8b20a2381f78447822ac1eab6504dd8'
+        owner_id: 44036562
+        repo_id: 760702757
+        uses:
+            - 'actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d'
+    'actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d':
+        ref: 'main'
+        commit: 'sha1-508db95dd578ae2727ebd6217d5ba78e4fbda05d'
+        owner_id: 44036562
+        repo_id: 760701061
